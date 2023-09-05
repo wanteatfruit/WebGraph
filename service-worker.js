@@ -101,6 +101,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       sendResponse({ data: result.data });
     });
   }
+  if(request.message === "CLEAR") {
+    chrome.storage.session.clear();
+    sendResponse({data: []});
+  }
   return true;
 });
 

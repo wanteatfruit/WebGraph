@@ -149,7 +149,7 @@ function buildGraph(data) {
     "#AB74FF", // Light Purple
   ];
   let nodes = data.map((d) => ({
-    data: { id: d.sourceUrl, type: d.type, href: d.sourceUrl, name: d.source, bg: backgroundColors[convertTypetoColor(d.type)] },
+    data: { id: d.sourceUrl, type: d.type, href: d.sourceUrl, name: checkLengthyTitle(d.source), bg: backgroundColors[convertTypetoColor(new URL(d.sourceUrl).hostname)] },
   }));
   nodes = nodes.concat(
     data.map((d) => ({
@@ -157,7 +157,7 @@ function buildGraph(data) {
         id: d.targetUrl,
         type: d.type,
         href: d.targetUrl,
-        name: d.target,
+        name: checkLengthyTitle(d.target),
         bg: backgroundColors[convertTypetoColor(d.type)],
       },
     }))
@@ -166,7 +166,6 @@ function buildGraph(data) {
   const edges = data.map((d) => ({
     data: { source: d.sourceUrl, target: d.targetUrl },
   }));
-  //use 20 colors, random group by type
   const types = Array.from(new Set(data.map((d) => d.type)));
 
 
@@ -181,10 +180,15 @@ function buildGraph(data) {
       .selector("node")
       .css({
         'content': "data(name)",
-        "text-valign": "bottom",
+        "text-valign": "center",
         "text-halign": "center",
-        'color': "black",
+        'color': "white",
         "background-color": "data(bg)",
+        'text-outline-width': '1px',
+        'text-outline-color': 'black',
+        'font-size': '10px',
+        'text-wrap': 'wrap',
+        'text-max-width': '30px',
       })
       .selector(":selected")
       .css({
@@ -209,14 +213,42 @@ function buildGraph(data) {
       window.location.href = this.data("href");
     }
   });
+  // cy.on('mouseover', 'node', function (event) {
+  //   var node = event.target;
+  //   // makeTippy(node);
+  //   console.log(node);
+  // });
+  const layout = cy.layout({
+    name:'cose',
+    animate: false,
+    padding: 60,
+  });
+  layout.run();
+
+}
+
+function makeTippy(node){
+  const shownTippy = new tippy(
+    node.propperRef(),
+    {
+      content:'my tootltip',
+      // html: html,
+    }
+  )
+  shownTippy.show();
 }
 
 function convertTypetoColor(type) {
-  const hashCode = type
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const numberBetween0And9 = hashCode % 10;
+  
+  const numberBetween0And9 = type.length % 10;
   return numberBetween0And9;
+}
+
+function checkLengthyTitle(title) {
+  if (title.length > 25) {
+    return title.substring(0, 25) + "...";
+  }
+  return title;
 }
 
 chrome.runtime.sendMessage({ message: "GET" }, function (response) {
@@ -225,6 +257,10 @@ chrome.runtime.sendMessage({ message: "GET" }, function (response) {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-  const data = buildGraphData();
-  buildGraph(data);
+  document.getElementById("clear").addEventListener("click", function () {
+    chrome.runtime.sendMessage({ message: "CLEAR" }, function (response) {
+      console.log(response);
+      buildGraph(response.data);
+    });
+  });
 });
