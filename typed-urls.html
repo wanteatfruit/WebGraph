@@ -4,16 +4,24 @@
     <title>Recently Typed URLs</title>
     <style>
       body {
-        min-width: 250px;
+        height: 600px;
+        width: 600px;
       }
+      #cy {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+      }      
     </style>
   </head>
 
   <body>
-    <script src="typed-urls.js"></script>
     <script src="d3.js"></script>
-
-    <div id="typedUrl_div"></div>
-    <div id="d3_div"></div>
+    <script src="cytoscape.js"></script>
+    <h1>Browse History</h1>
+    <div id="cy"></div>
+    <script src="typed-urls.js"></script>
   </body>
 </html>

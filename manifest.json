@@ -16,7 +16,8 @@
           "<all_urls>"
         ],
         "js": [
-          "d3.js"
+          "d3.js",
+          "cytoscape.js"
         ]
       }
     ],

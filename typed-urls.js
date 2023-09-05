@@ -12,282 +12,219 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Event listner for clicks on links in a browser action popup.
-// Open the link in a new tab of the current window.
-function onAnchorClick(event) {
-  chrome.tabs.create({
-    selected: true,
-    url: event.srcElement.href,
-  });
-  return false;
-}
+// function buildGraph(data) {
+//   function linkArc(d) {
+//     const r = Math.hypot(d.target.x - d.source.x, d.target.y - d.source.y);
+//     return `
+//       M${d.source.x},${d.source.y}
+//       A${r},${r} 0 0,1 ${d.target.x},${d.target.y}
+//     `;
+//   }
+//   drag = simulation => {
 
-// Given an array of URLs, build a DOM list of those URLs in the
-// browser action popup.
-function buildPopupDom(divName, data) {
-  let popupDiv = document.getElementById(divName);
+//     function dragstarted(event, d) {
+//       if (!event.active) simulation.alphaTarget(0.3).restart();
+//       d.fx = d.x;
+//       d.fy = d.y;
+//     }
 
-  let ul = document.createElement("ul");
-  popupDiv.appendChild(ul);
+//     function dragged(event, d) {
+//       d.fx = event.x;
+//       d.fy = event.y;
+//     }
 
-  for (let i = 0, ie = data.length; i < ie; ++i) {
-    let a = document.createElement("a");
-    a.href = data[i];
-    a.appendChild(document.createTextNode(data[i]));
-    a.addEventListener("click", onAnchorClick);
+//     function dragended(event, d) {
+//       if (!event.active) simulation.alphaTarget(0);
+//       d.fx = null;
+//       d.fy = null;
+//     }
 
-    let li = document.createElement("li");
-    li.appendChild(a);
+//     return d3.drag()
+//         .on("start", dragstarted)
+//         .on("drag", dragged)
+//         .on("end", dragended);
+//   }
+//   const width = 900;
+//   const height = 600;
+//   const types = Array.from(new Set(data.map((d) => d.type)));
+//   const nodes = Array.from(
+//     new Set(data.flatMap((l) => [l.source, l.target])),
+//     (id) => ({ id })
+//   );
+//   const links = data.map((d) => Object.create(d));
 
-    ul.appendChild(li);
-  }
-}
+//   const color = d3.scaleOrdinal(types, d3.schemeCategory10);
 
-// Search history to find up to ten links that a user has typed in,
-// and show those links in a popup.
-function buildTypedUrlList(divName) {
-  // To look for history items visited in the last week,
-  // subtract a week of microseconds from the current time.
-  let microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
-  let oneWeekAgo = new Date().getTime() - microsecondsPerWeek;
+//   const simulation = d3
+//     .forceSimulation(nodes)
+//     .force(
+//       "link",
+//       d3.forceLink(links).id((d) => d.id)
+//     )
+//     .force("charge", d3.forceManyBody().strength(-600))
+//     .force("x", d3.forceX())
+//     .force("y", d3.forceY());
 
-  // Track the number of callbacks from chrome.history.getVisits()
-  // that we expect to get.  When it reaches zero, we have all results.
-  let numRequestsOutstanding = 0;
+//   const svg = d3
+//     .create("svg")
+//     .attr("viewBox", [-width / 2, -height / 2, width, height])
+//     .attr('style', "width: 100%; height:'auto'")
+//     .style("font", "12px sans-serif");
 
-  chrome.history.search(
-    {
-      text: "", // Return every history item....
-      startTime: oneWeekAgo, // that was accessed less than one week ago.
-    },
-    function (historyItems) {
-      console.log(historyItems);
-      // For each history item, get details on all visits.
-      for (let i = 0; i < historyItems.length; ++i) {
-        let url = historyItems[i].url;
-        let processVisitsWithUrl = function (url) {
-          // We need the url of the visited item to process the visit.
-          // Use a closure to bind the  url into the callback's args.
-          return function (visitItems) {
-            processVisits(url, visitItems);
-          };
-        };
-        chrome.history.getVisits({ url: url }, processVisitsWithUrl(url));
-        numRequestsOutstanding++;
-      }
-      if (!numRequestsOutstanding) {
-        onAllVisitsProcessed();
-      }
-    }
-  );
+//   // Per-type markers, as they don't inherit styles.
+//   svg
+//     .append("defs")
+//     .selectAll("marker")
+//     .data(types)
+//     .join("marker")
+//     .attr("id", (d) => `arrow-${d}`)
+//     .attr("refX", 15)
+//     .attr("refY", -0.5)
+//     .attr("markerWidth", 6)
+//     .attr("markerHeight", 6)
+//     .attr("orient", "auto")
+//     .append("path")
+//     .attr("fill", color)
+//     .attr("d", "M0,-5L10,0L0,5");
 
-  // Maps URLs to a count of the number of times the user typed that URL into
-  // the omnibox.
-  let urlToCount = {};
+//   const link = svg
+//     .append("g")
+//     .attr("fill", "none")
+//     .attr("stroke-width", 1.5)
+//     .selectAll("path")
+//     .data(links)
+//     .join("path")
+//     .attr("stroke", (d) => color(d.type))
+//     .attr("marker-end", (d) => `url(${new URL(`#arrow-${d.type}`, location)})`);
 
-  // Callback for chrome.history.getVisits().  Counts the number of
-  // times a user visited a URL by typing the address.
-  const processVisits = function (url, visitItems) {
-    for (let i = 0, ie = visitItems.length; i < ie; ++i) {
-      // Ignore items unless the user typed the URL.
-      if (visitItems[i].transition != "typed") {
-        continue;
-      }
+//   const node = svg
+//     .append("g")
+//     .attr("fill", "currentColor")
+//     .attr("stroke-linecap", "round")
+//     .attr("stroke-linejoin", "round")
+//     .selectAll("g")
+//     .data(nodes)
+//     .join("g")
+//     .call(drag(simulation));
 
-      if (!urlToCount[url]) {
-        urlToCount[url] = 0;
-      }
+//   node
+//     .append("circle")
+//     .attr("stroke", (d) => color(d.type))
+//     .attr("stroke-width", 1.5)
+//     .attr("r", 4);
 
-      urlToCount[url]++;
-    }
+//   node
+//     .append("text")
+//     .attr("x", 8)
+//     .attr("y", "0.31em")
+//     .text((d) => d.id)
+//     .clone(true)
+//     .lower()
+//     .attr("text-anchor", "middle")
+//     .attr("fill", "none")
+//     .attr("stroke", "white")
+//     .attr("stroke-width", 3);
 
-    // If this is the final outstanding call to processVisits(),
-    // then we have the final results.  Use them to build the list
-    // of URLs to show in the popup.
-    if (!--numRequestsOutstanding) {
-      onAllVisitsProcessed();
-    }
-  };
+//   simulation.on("tick", () => {
+//     link.attr("d", linkArc);
+//     node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+//   });
 
-  // This function is called when we have the final list of URls to display.
-  const onAllVisitsProcessed = () => {
-    // Get the top scorring urls.
-    let urlArray = [];
-    for (let url in urlToCount) {
-      urlArray.push(url);
-    }
-
-    // Sort the URLs by the number of times the user typed them.
-    urlArray.sort(function (a, b) {
-      return urlToCount[b] - urlToCount[a];
-    });
-
-    buildPopupDom(divName, urlArray.slice(0, 10));
-  };
-}
-
-function buildGraphData() {
-  //{source, target, type}
-  //process historyItems into graph data
-  //type is domain
-  let data = [];
-  chrome.history.search(
-    {
-      text: "", // Return every history item....
-      maxResults: 1000, 
-    },
-    function (historyItems) {
-      console.log(historyItems);
-      // For each history item, get details on all visits.
-      for (let i = 0; i < historyItems.length; ++i) {
-        let url = historyItems[i].url;
-        //get visits
-        chrome.history.getVisits({ url: url }, function (visitItems) {
-          // console.log(visitItems)
-          //find visit that transitiontype is link
-          for (let j = 0; j < visitItems.length; ++j) {
-            if (visitItems[j].transition == "link") {
-              data.push({
-                source: visitItems[j].visitId,
-                target: visitItems[j].id,
-                type: new URL(url).hostname,
-              });
-            }
-          }
-        });
-      }
-    }
-  );
-  console.log(data);
-
-  return data;
-}
+//   // Append the SVG element.
+//   let div = document.getElementById("d3_div");
+//   div.appendChild(svg.node());
+// }
 
 function buildGraph(data) {
-  function linkArc(d) {
-    const r = Math.hypot(d.target.x - d.source.x, d.target.y - d.source.y);
-    return `
-      M${d.source.x},${d.source.y}
-      A${r},${r} 0 0,1 ${d.target.x},${d.target.y}
-    `;
-  }
-  drag = simulation => {
-  
-    function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      d.fx = d.x;
-      d.fy = d.y;
-    }
-    
-    function dragged(event, d) {
-      d.fx = event.x;
-      d.fy = event.y;
-    }
-    
-    function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
-    }
-    
-    return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
-  }
-  const width = 300;
-  const height = 200;
-  const types = Array.from(new Set(data.map((d) => d.type)));
-  const nodes = Array.from(
-    new Set(data.flatMap((l) => [l.source, l.target])),
-    (id) => ({ id })
+  const backgroundColors = [
+    "#0074E4", // Bright Blue
+    "#00A454", // Bright Green
+    "#8A56AC", // Deep Purple
+    "#FF6B4A", // Vibrant Orange
+    "#333333", // Dark Gray
+    "#FF5454", // Bright Red
+    "#00C1D4", // Cyan
+    "#FFA400", // Bright Yellow
+    "#FFCF00", // Yellow
+    "#AB74FF", // Light Purple
+  ];
+  let nodes = data.map((d) => ({
+    data: { id: d.sourceUrl, type: d.type, href: d.sourceUrl, name: d.source, bg: backgroundColors[convertTypetoColor(d.type)] },
+  }));
+  nodes = nodes.concat(
+    data.map((d) => ({
+      data: {
+        id: d.targetUrl,
+        type: d.type,
+        href: d.targetUrl,
+        name: d.target,
+        bg: backgroundColors[convertTypetoColor(d.type)],
+      },
+    }))
   );
-  const links = data.map((d) => Object.create(d));
-
-  const color = 'black'
-
-  const simulation = d3
-    .forceSimulation(nodes)
-    .force(
-      "link",
-      d3.forceLink(links).id((d) => d.id)
-    )
-    .force("charge", d3.forceManyBody().strength(-400))
-    .force("x", d3.forceX())
-    .force("y", d3.forceY());
-
-  const svg = d3
-    .create("svg")
-    .attr("viewBox", [-width / 2, -height / 2, width, height])
-    .style("font", "12px sans-serif");
+  console.log(nodes);
+  const edges = data.map((d) => ({
+    data: { source: d.sourceUrl, target: d.targetUrl },
+  }));
+  //use 20 colors, random group by type
+  const types = Array.from(new Set(data.map((d) => d.type)));
 
 
-
-  // Per-type markers, as they don't inherit styles.
-  svg
-    .append("defs")
-    .selectAll("marker")
-    .data(types)
-    .join("marker")
-    .attr("id", (d) => `arrow-${d}`)
-    .attr("refX", 15)
-    .attr("refY", -0.5)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("fill", color)
-    .attr("d", "M0,-5L10,0L0,5");
-
-  const link = svg
-    .append("g")
-    .attr("fill", "none")
-    .attr("stroke-width", 1.5)
-    .selectAll("path")
-    .data(links)
-    .join("path")
-    .attr("stroke", (d) => color(d.type))
-    .attr("marker-end", (d) => `url(${new URL(`#arrow-${d.type}`, location)})`);
-
-  const node = svg
-    .append("g")
-    .attr("fill", "currentColor")
-    .attr("stroke-linecap", "round")
-    .attr("stroke-linejoin", "round")
-    .selectAll("g")
-    .data(nodes)
-    .join("g")
-    .call(drag(simulation));
-
-  node
-    .append("circle")
-    .attr("stroke", "white")
-    .attr("stroke-width", 1.5)
-    .attr("r", 4);
-
-  node
-    .append("text")
-    .attr("x", 8)
-    .attr("y", "0.31em")
-    .text((d) => d.id)
-    .clone(true)
-    .lower()
-    .attr("fill", "none")
-    .attr("stroke", "white")
-    .attr("stroke-width", 3);
-
-  simulation.on("tick", () => {
-    link.attr("d", linkArc);
-    node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+  const cy = cytoscape({
+    container: document.getElementById("cy"),
+    elements: {
+      nodes: nodes,
+      edges: edges,
+    },
+    style: cytoscape
+      .stylesheet()
+      .selector("node")
+      .css({
+        'content': "data(name)",
+        "text-valign": "bottom",
+        "text-halign": "center",
+        'color': "black",
+        "background-color": "data(bg)",
+      })
+      .selector(":selected")
+      .css({
+        "background-color": "black",
+        "line-color": "black",
+        "target-arrow-color": "black",
+        "source-arrow-color": "black",
+        "text-outline-color": "black",
+      })
+      .selector("edge")
+      .css({
+        "curve-style": "bezier",
+        "target-arrow-shape": "triangle",
+      }),
   });
-
-  // Append the SVG element.
-  let div = document.getElementById("d3_div");
-  div.appendChild(svg.node());
+  cy.on("tap", "node", function () {
+    try {
+      // your browser may block popups
+      window.open(this.data("href"));
+    } catch (e) {
+      // fall back on url change
+      window.location.href = this.data("href");
+    }
+  });
 }
 
-document.addEventListener("DOMContentLoaded", async function () {
-  //buildTypedUrlList("typedUrl_div");
+function convertTypetoColor(type) {
+  const hashCode = type
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const numberBetween0And9 = hashCode % 10;
+  return numberBetween0And9;
+}
+
+chrome.runtime.sendMessage({ message: "GET" }, function (response) {
+  console.log(response.data);
+  buildGraph(response.data);
+});
+
+document.addEventListener("DOMContentLoaded", function () {
   const data = buildGraphData();
   buildGraph(data);
 });
