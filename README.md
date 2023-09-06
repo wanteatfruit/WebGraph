@@ -24,3 +24,11 @@ Your browsing history stays private and secure. It only works with your local da
 3. Click **Load unpacked** and select the unzipped folder.
 4. Click the puzzle icon left of chrome user avatar and pin the extension.
 5. And you're set! Whenever you need to see your digital footprint, simply press the pinned icon!
+
+## Roadmap
+- ✅ Chrome support
+- ✅ Basic functions
+- ⚠ Search & filter
+- ⚠ Tooltips
+- ⚠ Edge support
+- ⚠ Bug fixes
