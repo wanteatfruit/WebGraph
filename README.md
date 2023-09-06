@@ -3,6 +3,7 @@
 ## Why?
 Imagine you're a student studying online, and you're struggling to keep track of your sources and study materials. You use this tool to turn your browsing history into an organized graph,
 making it easy to see the websites and topics you've explored. It simplifies your study process and helps you stay focused.
+![1693967443245](https://github.com/wanteatfruit/WebGraph/assets/91269408/e4d40056-dc0f-4349-a7f8-57a1cf0f0279)
 
 ## Features
 **🧭 Navigate Your Web Steps**
