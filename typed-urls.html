@@ -4,10 +4,12 @@
     <title>Recently Typed URLs</title>
     <style>
       body {
-        height: 600px;
+        height: 500px;
         width: 600px;
       }
       #cy {
+        margin-top: 5px;
+        margin-bottom: 5px;
         height: 100%;
         width: 100%;
         
@@ -18,11 +20,11 @@
   <body>
     <script src="d3.js"></script>
     <script src="cytoscape.js"></script>
-    <h1>Browse History</h1>
+    <div>
+      <h1>Your Browse Graph</h1>
+      <button id="clear">Reset</button>
+    </div>
     <div id="cy"></div>
-    <button id="clear" style="position:absolute; left:0; top:0;">reset</button>
-    <script src="tippy.js"></script>
-    <script src="popper.js"></script>
     <script src="typed-urls.js"></script>
   </body>
 </html>

@@ -201,7 +201,8 @@ function buildGraph(data) {
       .selector("edge")
       .css({
         "curve-style": "bezier",
-        "target-arrow-shape": "triangle",
+        "target-arrow-shape": "triangle-backcurve",
+        'width': 2,
       }),
   });
   cy.on("tap", "node", function () {
