@@ -1,5 +1,5 @@
 {
-    "name": "Net Trace",
+    "name": "WebGraph",
     "version": "0.1",
     "description": "Visualize the network of URLs you visit",
     "permissions": ["activeTab","tabs","storage"],
